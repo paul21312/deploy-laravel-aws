@@ -1,0 +1,58 @@
+name: Build & Deploy to ECS
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: laravel-fargate-app
+  CLUSTER_NAME: laravel-fargate-cluster
+  SERVICE_NAME: laravel-fargate-service
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build & push image
+      id: build
+      run: |
+        IMAGE_TAG=${GITHUB_SHA::8}
+        ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
+        docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG -f docker/Dockerfile .
+        docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+        echo "IMAGE_URI=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_ENV
+
+    - name: Prepare task definition (inject image & role)
+      run: |
+        # replace placeholder IMAGE_URI and REPLACE_EXEC_ROLE_ARN
+        # You must set EXEC_ROLE_ARN as a repo secret (or hardcode if ok)
+        jq --arg img "$IMAGE_URI" --arg exec "$EXEC_ROLE_ARN" '.containerDefinitions[0].image=$img | .executionRoleArn=$exec' infra/task-def-templates/app-taskdef.json > infra/taskdef.json
+      env:
+        IMAGE_URI: ${{ env.IMAGE_URI }}
+        EXEC_ROLE_ARN: ${{ secrets.EXEC_ROLE_ARN }}
+
+    - name: Register task definition
+      run: |
+        aws ecs register-task-definition --cli-input-json file://infra/taskdef.json > /tmp/td.json
+        cat /tmp/td.json
+
+    - name: Update service (force new deployment)
+      run: |
+        aws ecs update-service --cluster ${{ env.CLUSTER_NAME }} --service ${{ env.SERVICE_NAME }} --force-new-deployment
