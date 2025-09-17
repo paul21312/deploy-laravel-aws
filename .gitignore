@@ -8,3 +8,14 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+/app/vendor/             # Composer dependencies
+/app/node_modules/        # Node dependencies if any
+/app/.env                 # Environment file
+/app/.env.*               # Any environment variants
+/app/storage/logs/        # Logs
+/app/storage/framework/cache/
+/app/storage/framework/views/
+/app/storage/framework/sessions/
+/app/bootstrap/cache/*.php
+*.log                     # Any log files
+*.tmp                     # Temporary files
