@@ -1,6 +1,7 @@
 resource "aws_security_group" "alb_sg" {
-  name   = "${var.project}-alb-sg"
-  vpc_id = aws_vpc.this.id
+  name        = "${var.project}-alb-sg"
+  vpc_id      = aws_vpc.this.id
+  description = "Allow inbound HTTP from internet to ALB"
 
   ingress {
     from_port   = 80
@@ -20,7 +21,7 @@ resource "aws_security_group" "alb_sg" {
 resource "aws_security_group" "ecs_sg" {
   name        = "${var.project}-ecs-sg"
   vpc_id      = aws_vpc.this.id
-  description = "Allow ALB -> ECS"
+  description = "Allow ALB to ECS tasks"
 
   ingress {
     from_port       = 80 
