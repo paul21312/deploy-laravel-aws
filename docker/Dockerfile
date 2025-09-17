@@ -28,6 +28,8 @@ RUN mkdir -p /var/www/html/public
 
 # Copy Nginx config
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+
 
 # Ensure /run/nginx exists
 RUN mkdir -p /run/nginx
