@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_REGION: ap-southeast-2
-  ECR_REPOSITORY: laravel-fargate-app
+  ECR_REPOSITORY: 372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-app
   CLUSTER_NAME: laravel-fargate-cluster
   SERVICE_NAME: laravel-app-service
 
@@ -31,13 +31,12 @@ jobs:
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build Docker image
+    - name: Build & push image
       run: |
         IMAGE_TAG=${GITHUB_SHA::8}
-        ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
-        docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG -f docker/Dockerfile .
-        docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-        echo "IMAGE_URI=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_ENV
+        docker build -t ${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG -f docker/Dockerfile .
+        docker push ${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG
+        echo "IMAGE_URI=${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG" >> $GITHUB_ENV
 
     - name: Prepare ECS task definition
       run: |
