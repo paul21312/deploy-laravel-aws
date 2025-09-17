@@ -4,10 +4,11 @@
   "networkMode": "awsvpc",
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "REPLACE_EXEC_ROLE_ARN",
+  "executionRoleArn": "arn:aws:iam::372836560826:role/laravel-fargate-ecs-exec-role",
+  "taskRoleArn": "arn:aws:iam::372836560826:role/laravel-fargate-ecs-exec-role",
   "containerDefinitions": [{
     "name": "app",
-    "image": "IMAGE_URI",
+    "image": "372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-app:latest",
     "essential": true,
     "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
     "logConfiguration": {
