@@ -19,3 +19,4 @@ override.tf.json
 /app/bootstrap/cache/*.php
 *.log                     # Any log files
 *.tmp                     # Temporary files
+**/.vendor/*
