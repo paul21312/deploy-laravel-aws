@@ -35,7 +35,8 @@ RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
 # --------------------------
 # Use the default nginx.conf from Alpine (already includes http.d/*.conf)
 # Just drop our site config inside http.d instead of conf.d
-COPY /docker/nginx/default.conf /etc/nginx/http.d/default.conf
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
+
 
 # Expose HTTP port
 EXPOSE 80
