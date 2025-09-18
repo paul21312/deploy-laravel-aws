@@ -2,39 +2,22 @@
   "family": "laravel-app",
   "requiresCompatibilities": ["FARGATE"],
   "networkMode": "awsvpc",
-  "cpu": "512",
-  "memory": "1024",
+  "cpu": "256",
+  "memory": "512",
   "executionRoleArn": "arn:aws:iam::372836560826:role/laravel-fargate-ecs-exec-role",
   "taskRoleArn": "arn:aws:iam::372836560826:role/laravel-fargate-ecs-exec-role",
-  "containerDefinitions": [
-    {
-      "name": "laravel-php",
-      "image": "372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-php:latest",
-      "essential": true,
-      "portMappings": [{ "containerPort": 9000, "protocol": "tcp" }],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/laravel-fargate",
-          "awslogs-region": "ap-southeast-2",
-          "awslogs-stream-prefix": "php"
-        }
-      }
-    },
-    {
-      "name": "laravel-nginx",
-      "image": "372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-nginx:latest",
-      "essential": true,
-      "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
-      "dependsOn": [{ "containerName": "laravel-php", "condition": "START" }],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/laravel-fargate",
-          "awslogs-region": "ap-southeast-2",
-          "awslogs-stream-prefix": "nginx"
-        }
+  "containerDefinitions": [{
+    "name": "app",
+    "image": "372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-app:latest",
+    "essential": true,
+    "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/laravel-fargate",
+        "awslogs-region": "ap-southeast-2",
+        "awslogs-stream-prefix": "app"
       }
     }
-  ]
+  }]
 }
