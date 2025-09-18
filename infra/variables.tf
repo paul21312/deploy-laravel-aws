@@ -19,4 +19,3 @@ variable "image_tag" {
   default = "latest" # CI will push with a SHA tag
 }
 
-# test
