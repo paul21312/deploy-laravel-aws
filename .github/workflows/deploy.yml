@@ -37,8 +37,13 @@ jobs:
         IMAGE_URI=${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG
         echo "Building Docker image $IMAGE_URI..."
         docker build -t $IMAGE_URI -f docker/Dockerfile .
+
+        # Verify nginx.conf includes the conf.d inside http
+        docker run --rm $IMAGE_URI cat /etc/nginx/nginx.conf
+
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
 
     - name: Prepare ECS task definition
       run: |

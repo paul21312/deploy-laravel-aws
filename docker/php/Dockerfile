@@ -1,0 +1,34 @@
+# --------------------------
+# Stage 1: Build PHP dependencies
+# --------------------------
+FROM composer:2 AS builder
+WORKDIR /app
+
+# Copy only composer files first to leverage caching
+COPY app/composer.json app/composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+# --------------------------
+# Stage 2: PHP-FPM container
+# --------------------------
+FROM php:8.2-fpm-alpine
+
+# Install PHP extensions
+RUN apk add --no-cache bash curl icu-dev libzip-dev zlib-dev oniguruma-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip intl opcache
+
+WORKDIR /var/www/html
+
+# Copy Laravel app
+COPY app /var/www/html
+
+# Copy vendor from builder stage
+COPY --from=builder /app/vendor /var/www/html/vendor
+
+# Ensure storage and bootstrap/cache are writable
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 9000
+CMD ["php-fpm", "-F"]
