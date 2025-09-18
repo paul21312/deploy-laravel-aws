@@ -4,37 +4,41 @@
 FROM composer:2 AS builder
 WORKDIR /app
 
-# Copy only composer files
+# Copy only composer files for dependency install
 COPY app/composer.json app/composer.lock ./
 
 # Install PHP dependencies
 RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
 # --------------------------
-# Final stage: Nginx only
+# Final stage: Nginx + PHP-FPM
 # --------------------------
-FROM alpine:latest
+FROM php:8.2-fpm-alpine
 
-# Install Nginx, bash, curl
-RUN apk add --no-cache nginx bash curl
+# Install Nginx and required packages
+RUN apk add --no-cache nginx bash curl icu-dev libzip-dev zlib-dev oniguruma-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip intl opcache
 
-# Set working directory
 WORKDIR /var/www/html
 
 # Copy application code
 COPY app /var/www/html
 
-# Ensure public directory exists
-RUN mkdir -p /var/www/html/public
+# Copy vendor from builder stage
+COPY --from=builder /app/vendor /var/www/html/vendor
 
-# Copy Nginx config files
+# Ensure storage and bootstrap/cache exist
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Copy Nginx configs
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Ensure /run/nginx exists
 RUN mkdir -p /run/nginx
 
-# Expose HTTP port
 EXPOSE 80
 
 # Start Nginx in the foreground
