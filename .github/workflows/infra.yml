@@ -13,7 +13,7 @@ on:
           - destroy
   push:
     paths:
-      - "infra/terraform/**"
+      - "infra/**"
 
 env:
   TF_DIR: infra/terraform
