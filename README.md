@@ -1,27 +1,5 @@
 # README - Laravel Fargate Deployment
 
-## Project Structure
-
-```
-.
-├── .github/workflows/
-│   ├── deploy-workflow\.yml  # CI/CD workflow for Laravel deployment
-│   └── infra-workflow\.yml   # Optional workflow for Terraform infra apply/destroy
-├── infra/                   # Terraform configuration files
-│   ├── alb.tf
-│   ├── ecs.tf
-│   ├── ecr.tf
-│   ├── iam.tf
-│   ├── route.tf
-│   ├── security.tf
-│   ├── subnet.tf
-│   ├── variables.tf
-│   └── vpc.tf
-├── app/                     # Laravel application
-├── Dockerfile               # Nginx + PHP-FPM container
-└── README.txt               # This file
-```
-
 ## Requirements
 
 * AWS Account
@@ -144,4 +122,5 @@ aws ecs execute-command \
   --command "/bin/sh" \
   --interactive
 ```
+
 
