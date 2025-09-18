@@ -1,5 +1,5 @@
 # --------------------------
-# Builder stage: install PHP dependencies
+# Builder stage (PHP dependencies)
 # --------------------------
 FROM composer:2 AS builder
 WORKDIR /app
@@ -15,7 +15,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --opt
 # --------------------------
 FROM php:8.2-fpm-alpine
 
-# Install Nginx and required packages
+# Install necessary packages
 RUN apk add --no-cache nginx bash curl icu-dev libzip-dev zlib-dev oniguruma-dev \
     && docker-php-ext-install pdo pdo_mysql mbstring zip intl opcache
 
@@ -28,18 +28,16 @@ COPY app /var/www/html
 COPY --from=builder /app/vendor /var/www/html/vendor
 
 # Ensure storage and bootstrap/cache exist
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copy Nginx configs
+# Copy custom Nginx config
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Ensure /run/nginx exists
-RUN mkdir -p /run/nginx
-
+# Expose port 80
 EXPOSE 80
 
-# Start Nginx in the foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Start both PHP-FPM and Nginx using a simple shell command
+CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
