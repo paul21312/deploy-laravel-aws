@@ -19,50 +19,52 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build & push image
-      run: |
-        IMAGE_TAG=${GITHUB_SHA::8}
-        IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+      - name: Build & push Docker image
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::8}
+          IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
 
-        echo "Building Docker image $IMAGE_URI..."
-        docker build -t $IMAGE_URI -f docker/Dockerfile .
+          echo "Building Docker image $IMAGE_URI..."
+          docker build -t $IMAGE_URI -f docker/Dockerfile .
 
-        # Quick validation of nginx.conf
-        docker run --rm $IMAGE_URI cat /etc/nginx/nginx.conf
+          # Quick validation of nginx.conf inside the image
+          docker run --rm $IMAGE_URI cat /etc/nginx/nginx.conf
 
-        docker push $IMAGE_URI
-        echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker push $IMAGE_URI
 
-    - name: Prepare ECS task definition
-      run: |
-        echo "Using image URI: $IMAGE_URI"
-        jq --arg img "$IMAGE_URI" --arg exec "$EXEC_ROLE_ARN" \
-          '.containerDefinitions[0].image=$img | .executionRoleArn=$exec' \
-          infra/task-def-templates/app-taskdef.json > infra/taskdef.json
-      env:
-        EXEC_ROLE_ARN: ${{ secrets.EXEC_ROLE_ARN }}
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
-    - name: Register ECS task definition
-      run: |
-        aws ecs register-task-definition --cli-input-json file://infra/taskdef.json > /tmp/td.json
-        cat /tmp/td.json
+      - name: Prepare ECS task definition
+        run: |
+          echo "Using image URI: $IMAGE_URI"
+          jq --arg img "$IMAGE_URI" \
+             '.containerDefinitions[0].image=$img' \
+             infra/task-def-templates/app-taskdef.json > infra/taskdef.json
 
-    - name: Update ECS service (force new deployment)
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.CLUSTER_NAME }} \
-          --service ${{ env.SERVICE_NAME }} \
-          --force-new-deployment
+      - name: Register ECS task definition
+        run: |
+          aws ecs register-task-definition --cli-input-json file://infra/taskdef.json > /tmp/td.json
+          cat /tmp/td.json
+
+      - name: Update ECS service (force new deployment)
+        run: |
+          NEW_TASK_DEF_ARN=$(jq -r '.taskDefinition.taskDefinitionArn' /tmp/td.json)
+          echo "Updating ECS service to task definition $NEW_TASK_DEF_ARN..."
+          aws ecs update-service \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --service ${{ env.SERVICE_NAME }} \
+            --task-definition $NEW_TASK_DEF_ARN \
+            --force-new-deployment
