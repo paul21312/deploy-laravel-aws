@@ -35,7 +35,7 @@ jobs:
         IMAGE_TAG=${GITHUB_SHA::8}
         PHP_IMAGE=${{ secrets.ECR_REGISTRY }}/laravel-php-fpm:$IMAGE_TAG
         echo "Building PHP-FPM image $PHP_IMAGE..."
-        docker build -t $PHP_IMAGE -f Dockerfile.php-fpm .
+        docker build -t $PHP_IMAGE -f docker/php/Dockerfile .
         docker push $PHP_IMAGE
         echo "PHP_IMAGE=$PHP_IMAGE" >> $GITHUB_ENV
 
@@ -44,7 +44,7 @@ jobs:
         IMAGE_TAG=${GITHUB_SHA::8}
         NGINX_IMAGE=${{ secrets.ECR_REGISTRY }}/laravel-nginx:$IMAGE_TAG
         echo "Building Nginx image $NGINX_IMAGE..."
-        docker build -t $NGINX_IMAGE -f Dockerfile.nginx .
+        docker build -t $NGINX_IMAGE -f docker/nginx/Dockerfile .
         docker push $NGINX_IMAGE
         echo "NGINX_IMAGE=$NGINX_IMAGE" >> $GITHUB_ENV
 
