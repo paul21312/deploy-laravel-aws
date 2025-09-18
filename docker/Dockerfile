@@ -11,31 +11,31 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --opt
 # --------------------------
 # Stage 2: Final container with PHP-FPM + Nginx
 # --------------------------
-FROM nginx:alpine
+FROM php:8.2-fpm-alpine
 
-# Install PHP-FPM and required extensions
-RUN apk add --no-cache \
-        php8 php8-fpm php8-mbstring php8-pdo php8-pdo_mysql php8-opcache \
-        php8-zip php8-intl php8-json php8-iconv bash curl icu-dev libzip-dev oniguruma-dev \
-    && mkdir -p /run/nginx /var/www/html
+# Install Nginx and necessary PHP extensions
+RUN apk add --no-cache nginx bash curl icu-dev libzip-dev zlib-dev oniguruma-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip intl opcache
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy Laravel app code
+# Copy Laravel application code
 COPY app /var/www/html
 
-# Copy custom Nginx configs
+# Copy vendor from builder stage
+COPY --from=builder /app/vendor /var/www/html/vendor
+
+# Ensure storage and bootstrap/cache exist and are writable
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Copy Nginx configs
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-
-# Ensure Laravel storage & cache directories exist and are writable
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chown -R nginx:nginx /var/www/html \
-    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose HTTP port
 EXPOSE 80
 
-# Start PHP-FPM and Nginx together
-CMD ["sh", "-c", "php-fpm8 -F & nginx -g 'daemon off;'"]
+# Start PHP-FPM and Nginx
+CMD ["sh", "-c", "php-fpm -F & nginx -g 'daemon off;'"]
