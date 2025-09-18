@@ -35,7 +35,7 @@ RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
 # --------------------------
 
 # Copy main nginx.conf
-COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+#COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Copy default Laravel site config
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
