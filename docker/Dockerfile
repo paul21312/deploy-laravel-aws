@@ -11,41 +11,31 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --opt
 # --------------------------
 # Stage 2: Final container with PHP-FPM + Nginx
 # --------------------------
-FROM php:8.2-fpm-alpine
+FROM nginx:alpine
 
-# Install necessary packages
-RUN apk add --no-cache nginx bash curl icu-dev libzip-dev zlib-dev oniguruma-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip intl opcache
+# Install PHP-FPM and required extensions
+RUN apk add --no-cache \
+        php8 php8-fpm php8-mbstring php8-pdo php8-pdo_mysql php8-opcache \
+        php8-zip php8-intl php8-json php8-iconv bash curl icu-dev libzip-dev oniguruma-dev \
+    && mkdir -p /run/nginx /var/www/html
 
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy application code
+# Copy Laravel app code
 COPY app /var/www/html
 
-# Copy vendor from builder stage
-COPY --from=builder /app/vendor /var/www/html/vendor
-
-# Ensure storage and bootstrap/cache exist
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# --------------------------
-# Copy Nginx config files
-# --------------------------
-
-# Copy main nginx.conf
-#COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
-
-# Copy default Laravel site config
+# Copy custom Nginx configs
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# --------------------------
-# Expose port 80
-# --------------------------
+# Ensure Laravel storage & cache directories exist and are writable
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R nginx:nginx /var/www/html \
+    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Expose HTTP port
 EXPOSE 80
 
-# --------------------------
-# Start PHP-FPM and Nginx
-# --------------------------
-CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
+# Start PHP-FPM and Nginx together
+CMD ["sh", "-c", "php-fpm8 -F & nginx -g 'daemon off;'"]
