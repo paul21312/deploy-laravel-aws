@@ -6,6 +6,7 @@ on:
 
 env:
   AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: 372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-app
   CLUSTER_NAME: laravel-fargate-cluster
   SERVICE_NAME: laravel-app-service
 
@@ -30,34 +31,25 @@ jobs:
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build & push PHP-FPM image
+    - name: Build & push image
       run: |
         IMAGE_TAG=${GITHUB_SHA::8}
-        PHP_IMAGE=${{ secrets.ECR_REGISTRY }}/laravel-php-fpm:$IMAGE_TAG
-        echo "Building PHP-FPM image $PHP_IMAGE..."
-        docker build -t $PHP_IMAGE -f docker/php/Dockerfile .
-        docker push $PHP_IMAGE
-        echo "PHP_IMAGE=$PHP_IMAGE" >> $GITHUB_ENV
+        IMAGE_URI=${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG
+        echo "Building Docker image $IMAGE_URI..."
+        docker build -t $IMAGE_URI -f docker/Dockerfile .
 
-    - name: Build & push Nginx image
-      run: |
-        IMAGE_TAG=${GITHUB_SHA::8}
-        NGINX_IMAGE=${{ secrets.ECR_REGISTRY }}/laravel-nginx:$IMAGE_TAG
-        echo "Building Nginx image $NGINX_IMAGE..."
-        docker build -t $NGINX_IMAGE -f docker/nginx/Dockerfile .
-        docker push $NGINX_IMAGE
-        echo "NGINX_IMAGE=$NGINX_IMAGE" >> $GITHUB_ENV
+        # Verify nginx.conf includes the conf.d inside http
+        docker run --rm $IMAGE_URI cat /etc/nginx/nginx.conf
+
+        docker push $IMAGE_URI
+        echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
 
     - name: Prepare ECS task definition
       run: |
-        echo "Using images:"
-        echo "PHP: $PHP_IMAGE"
-        echo "NGINX: $NGINX_IMAGE"
-
-        jq --arg php "$PHP_IMAGE" --arg nginx "$NGINX_IMAGE" --arg exec "$EXEC_ROLE_ARN" \
-          '.containerDefinitions[0].image=$php |
-           .containerDefinitions[1].image=$nginx |
-           .executionRoleArn=$exec' \
+        echo "Using image URI: $IMAGE_URI"
+        jq --arg img "$IMAGE_URI" --arg exec "$EXEC_ROLE_ARN" \
+          '.containerDefinitions[0].image=$img | .executionRoleArn=$exec' \
           infra/task-def-templates/app-taskdef.json > infra/taskdef.json
       env:
         EXEC_ROLE_ARN: ${{ secrets.EXEC_ROLE_ARN }}
