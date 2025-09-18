@@ -18,3 +18,5 @@ variable "ecr_repo_name" {
 variable "image_tag" {
   default = "latest" # CI will push with a SHA tag
 }
+
+# test
