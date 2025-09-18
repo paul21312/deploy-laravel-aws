@@ -31,8 +31,8 @@ RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /run/nginx \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Copy Nginx configs
-COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY /docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY /docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Expose HTTP port
 EXPOSE 80
