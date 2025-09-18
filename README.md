@@ -2,6 +2,7 @@
 
 ## Project Structure
 
+```
 .
 ├── .github/workflows/
 │   ├── deploy-workflow\.yml  # CI/CD workflow for Laravel deployment
@@ -19,6 +20,7 @@
 ├── app/                     # Laravel application
 ├── Dockerfile               # Nginx + PHP-FPM container
 └── README.txt               # This file
+```
 
 ## Requirements
 
@@ -142,3 +144,4 @@ aws ecs execute-command \
   --command "/bin/sh" \
   --interactive
 ```
+
