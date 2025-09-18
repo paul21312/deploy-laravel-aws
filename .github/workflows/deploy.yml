@@ -6,7 +6,8 @@ on:
 
 env:
   AWS_REGION: ap-southeast-2
-  ECR_REPOSITORY: 372836560826.dkr.ecr.ap-southeast-2.amazonaws.com/laravel-fargate-app
+  ECR_REGISTRY: 372836560826.dkr.ecr.ap-southeast-2.amazonaws.com
+  ECR_REPOSITORY: laravel-fargate-app
   CLUSTER_NAME: laravel-fargate-cluster
   SERVICE_NAME: laravel-app-service
 
@@ -34,16 +35,16 @@ jobs:
     - name: Build & push image
       run: |
         IMAGE_TAG=${GITHUB_SHA::8}
-        IMAGE_URI=${{ secrets.ECR_REGISTRY }}:$IMAGE_TAG
+        IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+
         echo "Building Docker image $IMAGE_URI..."
         docker build -t $IMAGE_URI -f docker/Dockerfile .
 
-        # Verify nginx.conf includes the conf.d inside http
+        # Quick validation of nginx.conf
         docker run --rm $IMAGE_URI cat /etc/nginx/nginx.conf
 
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-
 
     - name: Prepare ECS task definition
       run: |
